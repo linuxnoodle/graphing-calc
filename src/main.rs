@@ -4,7 +4,7 @@ use engine::*;
 use std::time::Instant;
 
 fn main() {
-    let mut vars = init((800, 600, 10));
+    let mut vars = init((800, 600, 20));
     loop {
         if !vars.running_state { break; }
         update(&mut vars);

@@ -15,9 +15,9 @@ use sdl2::keyboard::Keycode;
 pub struct EngineVars {
     ctx: sdl2::Sdl,
     cvs: sdl2::render::Canvas<sdl2::video::Window>,
-    winr: Box<sdl2::video::Window>,
-    ectx: egui::CtxRef,
-    estate: egui_backend::EguiStateHandler,
+    //winr: Box<sdl2::video::Window>,
+    //ectx: egui::CtxRef,
+    //estate: egui_backend::EguiStateHandler,
     res: (i32, i32, i32), // x, y, unit size
     pub start_time: Instant,
     pub running_state: bool
@@ -28,29 +28,23 @@ pub fn init(size: (i32, i32, i32)) -> Box<EngineVars> {
     let sdl_context = sdl2::init().unwrap();
     let video = sdl_context.video().unwrap();
     let sdl_window = Box::new(video.window("", size.0 as u32, size.1 as u32)
-        .opengl()
         .position_centered()
-        .resizable()
         .build()
         .unwrap());
     
-    let gl_attr = video.gl_attr();
-    gl_attr.set_context_profile(sdl2::video::GLProfile::Core);
-    gl_attr.set_context_version(3, 0);
-
     // egui init
-    let shader_ver = egui_backend::ShaderVersion::Adaptive;
+    /*let shader_ver = egui_backend::ShaderVersion::Adaptive;
     let (_painter, egui_state) = 
         egui_backend::with_sdl2(&sdl_window, shader_ver, egui_backend::DpiScaling::Custom(2.0));
-    let egui_ctx = egui::CtxRef::default();
+    let egui_ctx = egui::CtxRef::default();*/
 
-    let sdl_canvas = &sdl_window.into_canvas().build().unwrap();
+    let sdl_canvas = sdl_window.into_canvas().build().unwrap();
     Box::new(EngineVars {
         ctx: sdl_context,
         cvs: sdl_canvas,
-        ectx: egui_ctx,
-        estate: egui_state,
-        winr: sdl_window,
+        //winr: sdl_window,
+        //ectx: egui_ctx,
+        //estate: egui_state,
         res: size,
         start_time: Instant::now(),
         running_state: true
@@ -75,12 +69,13 @@ pub fn update(vars: &mut Box<EngineVars>) {
     
 pub fn render(vars: &mut Box<EngineVars>) {
     // egui rendering
-    let mut _egui_output = vars.ectx.begin_frame(vars.estate.input.take());
+    /*let mut _egui_output = vars.ectx.begin_frame(vars.estate.input.take());
     egui::CentralPanel::default().show(&vars.ectx, |ui| {
         ui.heading("Hello World!");
     });
-    let (_egui_output, _paint_cmds) = vars.ectx.end_frame();
+    let (_egui_output, _paint_cmds) = vars.ectx.end_frame();*/
 
+    vars.cvs.set_draw_color(Color::RGB(20, 120, 150));
     for i in 0..=(vars.res.0 / vars.res.2) {
         vars.cvs.draw_line((i * vars.res.2, 0), (i * vars.res.2, vars.res.1)).unwrap();
     }
