@@ -1,7 +1,6 @@
 pub mod engine;
 
 use engine::*;
-use std::time::Instant;
 
 fn main() {
     let mut vars = init((800, 600, 20));
