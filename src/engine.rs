@@ -4,8 +4,9 @@ extern crate egui;
 pub mod calc;
 pub mod converter;
 
-//use std::time::Instant;
-//use egui_sdl2_gl as egui_backend;
+use std::time::Instant;
+use egui_sdl2_gl as egui_backend;
+
 use sdl2::pixels::Color;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
@@ -16,9 +17,6 @@ use sdl2::keyboard::Keycode;
 pub struct EngineVars {
     ctx: sdl2::Sdl,
     cvs: sdl2::render::Canvas<sdl2::video::Window>,
-    //winr: Box<sdl2::video::Window>,
-    //ectx: egui::CtxRef,
-    //estate: egui_backend::EguiStateHandler,
     res: (i32, i32, i32), // x, y, unit size
     grid_offset: (i32, i32),
     mouse_button_pressed: bool,
@@ -34,19 +32,10 @@ pub fn init(size: (i32, i32, i32)) -> Box<EngineVars> {
         .build()
         .unwrap());
     
-    // egui init
-    /*let shader_ver = egui_backend::ShaderVersion::Adaptive;
-    let (_painter, egui_state) = 
-        egui_backend::with_sdl2(&sdl_window, shader_ver, egui_backend::DpiScaling::Custom(2.0));
-    let egui_ctx = egui::CtxRef::default();*/
-
     let sdl_canvas = sdl_window.into_canvas().build().unwrap();
     Box::new(EngineVars {
         ctx: sdl_context,
         cvs: sdl_canvas,
-        //winr: sdl_window,
-        //ectx: egui_ctx,
-        //estate: egui_state,
         res: size,
         grid_offset: (0, 0),
         mouse_button_pressed: false,
@@ -67,25 +56,32 @@ pub fn update(evars: &mut Box<EngineVars>) {
             },
             Event::KeyDown { keycode: Some(Keycode::S), .. } => {
                 evars.grid_offset.1 -= 5;
-            }
+            },
             Event::KeyDown { keycode: Some(Keycode::A), .. } => {
                 evars.grid_offset.0 += 5;
-            }
+            },
             Event::KeyDown { keycode: Some(Keycode::D), .. } => {
                 evars.grid_offset.0 -= 5;
-            }
+            },
             Event::MouseButtonDown { mouse_btn: _, .. } => {
                 evars.mouse_button_pressed = true;
-            }
+            },
             Event::MouseButtonUp { mouse_btn: _, .. } => {
                 evars.mouse_button_pressed = false;
-            }
+            },
+            Event::MouseWheel { y, .. } => {
+                if y > 0 {
+                    evars.res.2 += 1;
+                } else {
+                    evars.res.2 -= if evars.res.2 <= 2 { 0 } else { 1 };
+                }
+            },
             Event::MouseMotion { xrel, yrel, .. } => {
                 if evars.mouse_button_pressed {
                     evars.grid_offset.0 += xrel;
                     evars.grid_offset.1 += yrel;
                 }
-            }
+            },
             _ => {}
         }
     }
@@ -93,12 +89,6 @@ pub fn update(evars: &mut Box<EngineVars>) {
 }
     
 pub fn render(evars: &mut Box<EngineVars>) {
-    // egui rendering
-    /*let mut _egui_output = evars.ectx.begin_frame(evars.estate.input.take());
-    egui::CentralPanel::default().show(&evars.ectx, |ui| {
-        ui.heading("Hello World!");
-    });
-    let (_egui_output, _paint_cmds) = evars.ectx.end_frame();*/
     evars.cvs.set_draw_color(Color::RGB(0, 0, 0));
     evars.cvs.clear();
 
@@ -117,8 +107,8 @@ pub fn render(evars: &mut Box<EngineVars>) {
 
     // overdraw axes because it's faster than an if statement
     evars.cvs.set_draw_color(Color::RGB(100, 200, 230));
-    evars.cvs.draw_line((evars.res.0 / 2 + evars.grid_offset.0, 0),
-                       (evars.res.0 / 2 + evars.grid_offset.0, evars.res.1)).unwrap();
+    evars.cvs.draw_line(((evars.res.0 - evars.res.0 % evars.res.2) / 2 + evars.grid_offset.0, 0),
+                       ((evars.res.0 - evars.res.0 % evars.res.2) / 2 + evars.grid_offset.0, evars.res.1)).unwrap();
     evars.cvs.draw_line((0, evars.res.1 / 2 + evars.grid_offset.1),
                        (evars.res.0, evars.res.1 / 2 + evars.grid_offset.1)).unwrap();
 
