@@ -12,6 +12,7 @@ use sdl2::keyboard::Keycode;
 //use calc::*;
 //use converter::*;
 
+// TODO: find some other, less janky mechanism to do this
 pub struct EngineVars {
     ctx: sdl2::Sdl,
     cvs: sdl2::render::Canvas<sdl2::video::Window>,
@@ -20,6 +21,7 @@ pub struct EngineVars {
     //estate: egui_backend::EguiStateHandler,
     res: (i32, i32, i32), // x, y, unit size
     grid_offset: (i32, i32),
+    mouse_button_pressed: bool,
     pub running_state: bool
 }
 
@@ -47,29 +49,42 @@ pub fn init(size: (i32, i32, i32)) -> Box<EngineVars> {
         //estate: egui_state,
         res: size,
         grid_offset: (0, 0),
+        mouse_button_pressed: false,
         running_state: true
     })
 }
 
-pub fn update(vars: &mut Box<EngineVars>) {
-    let mut event_pump = vars.ctx.event_pump().unwrap();
+pub fn update(evars: &mut Box<EngineVars>) {
+    let mut event_pump = evars.ctx.event_pump().unwrap();
     for event in event_pump.poll_iter() {
         match event {
             Event::Quit {..} |
             Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
-                vars.running_state = false;
+                evars.running_state = false;
             },
             Event::KeyDown { keycode: Some(Keycode::W), .. } => {
-                vars.grid_offset.1 += 5;
+                evars.grid_offset.1 += 5;
             },
             Event::KeyDown { keycode: Some(Keycode::S), .. } => {
-                vars.grid_offset.1 -= 5;
+                evars.grid_offset.1 -= 5;
             }
             Event::KeyDown { keycode: Some(Keycode::A), .. } => {
-                vars.grid_offset.0 += 5;
+                evars.grid_offset.0 += 5;
             }
             Event::KeyDown { keycode: Some(Keycode::D), .. } => {
-                vars.grid_offset.0 -= 5;
+                evars.grid_offset.0 -= 5;
+            }
+            Event::MouseButtonDown { mouse_btn: _, .. } => {
+                evars.mouse_button_pressed = true;
+            }
+            Event::MouseButtonUp { mouse_btn: _, .. } => {
+                evars.mouse_button_pressed = false;
+            }
+            Event::MouseMotion { xrel, yrel, .. } => {
+                if evars.mouse_button_pressed {
+                    evars.grid_offset.0 += xrel;
+                    evars.grid_offset.1 += yrel;
+                }
             }
             _ => {}
         }
@@ -77,55 +92,55 @@ pub fn update(vars: &mut Box<EngineVars>) {
 
 }
     
-pub fn render(vars: &mut Box<EngineVars>) {
+pub fn render(evars: &mut Box<EngineVars>) {
     // egui rendering
-    /*let mut _egui_output = vars.ectx.begin_frame(vars.estate.input.take());
-    egui::CentralPanel::default().show(&vars.ectx, |ui| {
+    /*let mut _egui_output = evars.ectx.begin_frame(evars.estate.input.take());
+    egui::CentralPanel::default().show(&evars.ectx, |ui| {
         ui.heading("Hello World!");
     });
-    let (_egui_output, _paint_cmds) = vars.ectx.end_frame();*/
-    vars.cvs.set_draw_color(Color::RGB(0, 0, 0));
-    vars.cvs.clear();
+    let (_egui_output, _paint_cmds) = evars.ectx.end_frame();*/
+    evars.cvs.set_draw_color(Color::RGB(0, 0, 0));
+    evars.cvs.clear();
 
-    vars.cvs.set_draw_color(Color::RGB(20, 120, 150));
-    let (grid_off_xn, grid_off_yn) = (vars.grid_offset.0 % vars.res.2, vars.grid_offset.1 % vars.res.2);
+    evars.cvs.set_draw_color(Color::RGB(20, 120, 150));
+    let (grid_off_xn, grid_off_yn) = (evars.grid_offset.0 % evars.res.2, evars.grid_offset.1 % evars.res.2);
     // vertical gridlines
-    for i in 0..=(vars.res.0 / vars.res.2) {
-        vars.cvs.draw_line((i * vars.res.2 + grid_off_xn, 0),
-                           (i * vars.res.2 + grid_off_xn, vars.res.1)).unwrap();
+    for i in 0..=(evars.res.0 / evars.res.2) {
+        evars.cvs.draw_line((i * evars.res.2 + grid_off_xn, 0),
+                           (i * evars.res.2 + grid_off_xn, evars.res.1)).unwrap();
     }
     // horizontal gridlines
-    for i in 0..=(vars.res.1 / vars.res.2) {
-        vars.cvs.draw_line((0, i * vars.res.2 + grid_off_yn),
-                           (vars.res.0, i * vars.res.2 + grid_off_yn)).unwrap();
+    for i in 0..=(evars.res.1 / evars.res.2) {
+        evars.cvs.draw_line((0, i * evars.res.2 + grid_off_yn),
+                           (evars.res.0, i * evars.res.2 + grid_off_yn)).unwrap();
     }
 
     // overdraw axes because it's faster than an if statement
-    vars.cvs.set_draw_color(Color::RGB(100, 200, 230));
-    vars.cvs.draw_line((vars.res.0 / 2 + vars.grid_offset.0, 0),
-                       (vars.res.0 / 2 + vars.grid_offset.0, vars.res.1)).unwrap();
-    vars.cvs.draw_line((0, vars.res.1 / 2 + vars.grid_offset.1),
-                       (vars.res.0, vars.res.1 / 2 + vars.grid_offset.1)).unwrap();
+    evars.cvs.set_draw_color(Color::RGB(100, 200, 230));
+    evars.cvs.draw_line((evars.res.0 / 2 + evars.grid_offset.0, 0),
+                       (evars.res.0 / 2 + evars.grid_offset.0, evars.res.1)).unwrap();
+    evars.cvs.draw_line((0, evars.res.1 / 2 + evars.grid_offset.1),
+                       (evars.res.0, evars.res.1 / 2 + evars.grid_offset.1)).unwrap();
 
     // draw equation listed 
     // TODO: tie in with equation parser to run any equation
-    vars.cvs.set_draw_color(Color::RGB(255, 255, 255));
+    evars.cvs.set_draw_color(Color::RGB(255, 255, 255));
     let delta_x = 0.01;
-    let xb = vars.res.0 as f32 / 2.0;
-    let yb = vars.res.1 as f32 / 2.0;
+    let xb = evars.res.0 as f32 / 2.0;
+    let yb = evars.res.1 as f32 / 2.0;
 
-    let iterations = (vars.res.0 * (1.0 / delta_x) as i32)/ vars.res.2;
+    let iterations = (evars.res.0 * (1.0 / delta_x) as i32)/ evars.res.2;
     for i in -iterations/2..iterations/2 {
-        let x = i as f32 * delta_x - vars.grid_offset.0 as f32 / vars.res.2 as f32;
-        let x_pixel = x * vars.res.2 as f32 + xb as f32 + vars.grid_offset.0 as f32;
-        let y_pixel = -math_equation(x) * vars.res.2 as f32 + yb as f32 + vars.grid_offset.1 as f32;
+        let x = i as f32 * delta_x - evars.grid_offset.0 as f32 / evars.res.2 as f32;
+        let x_pixel = x * evars.res.2 as f32 + xb as f32 + evars.grid_offset.0 as f32;
+        let y_pixel = -math_equation(x) * evars.res.2 as f32 + yb as f32 + evars.grid_offset.1 as f32;
 
-        let xn_pixel = x * vars.res.2 as f32 + delta_x + xb as f32 + vars.grid_offset.0 as f32;
-        let yn_pixel = -math_equation(x + delta_x) * vars.res.2 as f32 + yb as f32 + vars.grid_offset.1 as f32;
-        vars.cvs.draw_line((x_pixel as i32, y_pixel as i32),
+        let xn_pixel = x * evars.res.2 as f32 + delta_x + xb as f32 + evars.grid_offset.0 as f32;
+        let yn_pixel = -math_equation(x + delta_x) * evars.res.2 as f32 + yb as f32 + evars.grid_offset.1 as f32;
+        evars.cvs.draw_line((x_pixel as i32, y_pixel as i32),
                            (xn_pixel as i32, yn_pixel as i32)).unwrap();
     }
-    vars.cvs.present();
+    evars.cvs.present();
 }
 
 fn math_equation(x: f32) -> f32 {
